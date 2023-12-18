@@ -785,18 +785,20 @@ class DnsSvcbSvcParam {
   ## VALIDATORS ##
   #region VALIDATORS
   hidden
+  [DnsSvcbAlpn]
   Validate_ALPN([string]$ALPN) {
     # accept either DnsSvcbAlpn format or IANA ALPN format
     if ( $script:DnsSvcbAlpnStr.ContainsKey($ALPN) ) { \
-      $this.ALPN += $ALPN
+      return $ALPN
     } elseif ( $script:DnsSvcbAlpnStr.ContainsValue($ALPN) ) {
       # convert the value to a key using the code that converts the value to a valid enum
       $aKey = $ALPN -replace "[\-|\.|\\|\/]",'_'
-      $this.ALPN += $aKey
+      return $aKey
     } else {
       # throw a warning
       $this.SetWarning("INVALID_ALPN", "The ALPN ($ALPN) was not found on the approved list.")
       # don't add the ALPN to the SvcParam
+      return $null
     }
   }
 
