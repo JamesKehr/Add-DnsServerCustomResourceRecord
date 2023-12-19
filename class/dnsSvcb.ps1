@@ -16,62 +16,62 @@
     Sample SVCB from Wireshark.
 
     Frame 2: 158 bytes on wire (1264 bits), 158 bytes captured (1264 bits) on interface \Device\NPF_{1D66F33A-F88C-473C-AD32-A42918977B0E}, id 1
-Ethernet II, Src: Ubiquiti_3c:19:13 (24:a4:3c:3c:19:13), Dst: ASUSTekCOMPU_b4:34:9e (4c:ed:fb:b4:34:9e)
-Internet Protocol Version 4, Src: 1.1.1.1, Dst: 192.168.3.101
-User Datagram Protocol, Src Port: 53, Dst Port: 60259
-Domain Name System (response)
-    Transaction ID: 0x8bbc
-    Flags: 0x81a0 Standard query response, No error
-    Questions: 1
-    Answer RRs: 1
-    Authority RRs: 0
-    Additional RRs: 1
-    Queries
-        cloudflare.com: type HTTPS, class IN
-            Name: cloudflare.com
-            [Name Length: 14]
-            [Label Count: 2]
-            Type: HTTPS (65) (HTTPS Specific Service Endpoints)
-            Class: IN (0x0001)
-    Answers
-        cloudflare.com: type HTTPS, class IN
-            Name: cloudflare.com
-            Type: HTTPS (65) (HTTPS Specific Service Endpoints)
-            Class: IN (0x0001)
-            Time to live: 43 (43 seconds)
-            Data length: 61
-            SvcPriority: 1
-            TargetName: <Root>
-            SvcParam: alpn=h3,h2
-                SvcParamKey: alpn (1)
-                SvcParamValue length: 6
-                ALPN length: 2
-                ALPN: h3
-                ALPN length: 2
-                ALPN: h2
-            SvcParam: ipv4hint=104.16.132.229,104.16.133.229
-                SvcParamKey: ipv4hint (4)
-                SvcParamValue length: 8
-                IP: 104.16.132.229
-                IP: 104.16.133.229
-            SvcParam: ipv6hint=2606:4700::6810:84e5,2606:4700::6810:85e5
-                SvcParamKey: ipv6hint (6)
-                SvcParamValue length: 32
-                IP: 2606:4700::6810:84e5
-                IP: 2606:4700::6810:85e5
-    Additional records
-        <Root>: type OPT
-            Name: <Root>
-            Type: OPT (41) 
-            UDP payload size: 1232
-            Higher bits in extended RCODE: 0x00
-            EDNS0 version: 0
-            Z: 0x0000
-                0... .... .... .... = DO bit: Cannot handle DNSSEC security RRs
-                .000 0000 0000 0000 = Reserved: 0x0000
-            Data length: 0
-    [Request In: 1]
-    [Time: 0.009658000 seconds]
+    Ethernet II, Src: Ubiquiti_3c:19:13 (24:a4:3c:3c:19:13), Dst: ASUSTekCOMPU_b4:34:9e (4c:ed:fb:b4:34:9e)
+    Internet Protocol Version 4, Src: 1.1.1.1, Dst: 192.168.3.101
+    User Datagram Protocol, Src Port: 53, Dst Port: 60259
+    Domain Name System (response)
+        Transaction ID: 0x8bbc
+        Flags: 0x81a0 Standard query response, No error
+        Questions: 1
+        Answer RRs: 1
+        Authority RRs: 0
+        Additional RRs: 1
+        Queries
+            cloudflare.com: type HTTPS, class IN
+                Name: cloudflare.com
+                [Name Length: 14]
+                [Label Count: 2]
+                Type: HTTPS (65) (HTTPS Specific Service Endpoints)
+                Class: IN (0x0001)
+        Answers
+            cloudflare.com: type HTTPS, class IN
+                Name: cloudflare.com
+                Type: HTTPS (65) (HTTPS Specific Service Endpoints)
+                Class: IN (0x0001)
+                Time to live: 43 (43 seconds)
+                Data length: 61
+                SvcPriority: 1
+                TargetName: <Root>
+                SvcParam: alpn=h3,h2
+                    SvcParamKey: alpn (1)
+                    SvcParamValue length: 6
+                    ALPN length: 2
+                    ALPN: h3
+                    ALPN length: 2
+                    ALPN: h2
+                SvcParam: ipv4hint=104.16.132.229,104.16.133.229
+                    SvcParamKey: ipv4hint (4)
+                    SvcParamValue length: 8
+                    IP: 104.16.132.229
+                    IP: 104.16.133.229
+                SvcParam: ipv6hint=2606:4700::6810:84e5,2606:4700::6810:85e5
+                    SvcParamKey: ipv6hint (6)
+                    SvcParamValue length: 32
+                    IP: 2606:4700::6810:84e5
+                    IP: 2606:4700::6810:85e5
+        Additional records
+            <Root>: type OPT
+                Name: <Root>
+                Type: OPT (41) 
+                UDP payload size: 1232
+                Higher bits in extended RCODE: 0x00
+                EDNS0 version: 0
+                Z: 0x0000
+                    0... .... .... .... = DO bit: Cannot handle DNSSEC security RRs
+                    .000 0000 0000 0000 = Reserved: 0x0000
+                Data length: 0
+        [Request In: 1]
+        [Time: 0.009658000 seconds]
 
 
     Hex dump of just the DNS data:
@@ -291,7 +291,9 @@ Domain Name System (response)
 
 #>
 
+using namespace System.Collections
 using namespace System.Collections.Generic
+
 
 <#
 # https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml#alpn-protocol-ids
@@ -725,8 +727,6 @@ class DnsSvcbSvcParam {
   #[List[<something>]]
   #$Keys
   
-  
-
   # these params are used to manage the class
   [DnsSvcbStatus]
   $Status
@@ -745,6 +745,20 @@ class DnsSvcbSvcParam {
   
   #endregion PROPERTIES
 
+  ### CONSTRUCTORS ###
+  #region CONSTRUCTORS
+
+  DnsSvcbSvcParam() {
+    $this.AddLog("[DnsSvcbSvcParam] - Empty constructor.")
+    $this.Mandatory = $null
+    $this.ALPN      = $null
+    $this.Port      = $null
+    $this.IPv4Hint  = $null
+    $this.IPv6Hint  = $null
+    $this.AddLog("[DnsSvcbSvcParam] - End.")
+  }
+
+  #endregion CONSTRUCTORS
 
 
   ### METHODS ###
@@ -820,7 +834,7 @@ class DnsSvcbSvcParam {
     Arbitrary keys can be represented using the unknown-key presentation format "keyNNNNN" where NNNNN 
     is the numeric value of the key type without leading zeros. A SvcParam in this form SHALL be parsed 
     as specified above, and the decoded value SHALL be used as its wire-format encoding.
-  #>
+
   hidden
   [bool]
   Validate_KeyName([string]$key) {
@@ -834,6 +848,7 @@ class DnsSvcbSvcParam {
 
     return $true
   }
+  #>
 
   hidden
   [ipaddress]
@@ -917,9 +932,184 @@ class DnsSvcbSvcParam {
   ## ADDERS ##
   #region ADDERS
 
-  AddIpv4Hint() {
+  ## handle ALPN
+  AddALPN([string]$alpn) {
+    $this.AddLog("[DnsSvcbSvcParam].AddALPN(str) - Begin!")
+    
+    $alpnStr = $this.Validate_IPv4Address($alpn)
+    $this.AddLog("[DnsSvcbSvcParam].AddALPN(str) - alpnStr: $alpnStr")
 
+    if ( $alpnStr -is [DnsSvcbAlpn] ) {
+      $this.AddLog("[DnsSvcbSvcParam].AddALPN(str) - Adding $alpnStr to IPv4Hints list.")
+      $this.ALPN += $alpnStr
+    } else {
+      $this.AddLog("[DnsSvcbSvcParam].AddALPN(str) - Failed to convert $alpn to type DnsSvcbAlpn.")
+    }
+
+    $this.AddLog("[DnsSvcbSvcParam].AddALPN(str) - End.")
   }
+
+  AddALPN([DnsSvcbAlpn]$alpn) {
+    $this.AddLog("[DnsSvcbSvcParam].AddALPN(enum) - Begin!")
+    
+    $this.AddLog("[DnsSvcbSvcParam].AddALPN(enum) - alpn: $alpn")
+
+    $this.ALPN += $alpn
+
+    $this.AddLog("[DnsSvcbSvcParam].AddALPN(enum) - End.")
+  }
+
+  # create methods to catch various array inputs
+  AddALPN([array]$alpn)             { $this.AddIpv4HintVoid($alpn) }
+   
+  AddALPN([arraylist]$alpn)         { $this.AddIpv4HintVoid($alpn) }
+   
+  AddALPN([List[Object]]$alpn)      { $this.AddIpv4HintVoid($alpn) }
+   
+  AddALPN([List[string]]$alpn)      { $this.AddIpv4HintVoid($alpn) }
+
+  AddALPN([List[DnsSvcbAlpn]]$alpn) { $this.AddIpv4HintVoid($alpn) }
+
+  # handles adding an array of ALPNs
+  hidden
+  AddAlpnVoid($alpnArr) {
+    $this.AddLog("[DnsSvcbSvcParam].AddAlpnVoid(void) - Begin!")
+
+    if ( $this.IsSupportedArrayType($alpnArr) ) {
+      foreach ( $alpn in $alpnArr ) {
+        $alpnStr = $this.Validate_ALPN($alpn)
+        $this.AddLog("[DnsSvcbSvcParam].AddAlpnVoid(void) - alpnStr: $alpnStr")
+
+        if ( $alpnStr -is [DnsSvcbAlpn] ) {
+          $this.AddLog("[DnsSvcbSvcParam].AddAlpnVoid(void) - Adding $alpnStr to ALPN list.")
+          $this.ALPN += $alpnStr
+        } else {
+          $this.AddLog("[DnsSvcbSvcParam].AddAlpnVoid(void) - Failed to convert $alpn to type DnsSvcbAlpn.")
+        }
+      }
+    }
+    
+    $this.AddLog("[DnsSvcbSvcParam].AddAlpnVoid(void) - End.")
+  }
+
+
+  ## handle port
+  AddPort([int32]$port) {
+    $this.AddLog("[DnsSvcbSvcParam].AddPort - Begin!")
+    
+    # validate the port
+    if ( $this.Validate_Port($port) ) {
+      $this.AddLog("[DnsSvcbSvcParam].AddPort - Port validated. Adding the port.")
+      $this.Port = $port
+    } else {
+      $this.AddLog("[DnsSvcbSvcParam].AddPort - Port ($port) validation failed.")
+    }
+
+    $this.AddLog("[DnsSvcbSvcParam].AddPort - End.")
+  }
+
+
+  ## handle IPv4 hints
+  AddIpv4Hint([string]$addr) {
+    $this.AddLog("[DnsSvcbSvcParam].AddIpv4Hint(str) - Begin!")
+    
+    $addr4 = $this.Validate_IPv4Address($addr)
+    $this.AddLog("[DnsSvcbSvcParam].AddIpv4Hint(str) - addr4: $addr4")
+
+    if ( $addr4 -is [ipaddress] ) {
+      $this.AddLog("[DnsSvcbSvcParam].AddIpv4Hint(str) - Adding $($addr4.IPAddressToString) to IPv4Hints list.")
+      $this.IPv4Hint += $addr4
+    } else {
+      $this.AddLog("[DnsSvcbSvcParam].AddIpv4Hint(str) - Failed to convert $addr to an IPv4 address.")
+    }
+
+    $this.AddLog("[DnsSvcbSvcParam].AddIpv4Hint(str) - End.")
+  }
+
+  # create methods to catch various array inputs
+  AddIpv4Hint([array]$addr)           { $this.AddIpv4HintVoid($addr) }
+   
+  AddIpv4Hint([arraylist]$addr)       { $this.AddIpv4HintVoid($addr) }
+   
+  AddIpv4Hint([List[Object]]$addr)    { $this.AddIpv4HintVoid($addr) }
+   
+  AddIpv4Hint([List[string]]$addr)    { $this.AddIpv4HintVoid($addr) }
+
+  AddIpv4Hint([List[ipaddress]]$addr) { $this.AddIpv4HintVoid($addr) }
+
+  # handles adding an array of IPv4 Hints
+  hidden
+  AddIpv4HintVoid($addrArr) {
+    $this.AddLog("[DnsSvcbSvcParam].AddIpv4HintVoid(void) - Begin!")
+
+    if ( $this.IsSupportedArrayType($addrArr) ) {
+      foreach ( $addr in $addrArr ) {
+        $addr4 = $this.Validate_IPv4Address($addr)
+        $this.AddLog("[DnsSvcbSvcParam].AddIpv4HintVoid(void) - addr4: $addr4")
+
+        if ( $addr4 -is [ipaddress] ) {
+          $this.AddLog("[DnsSvcbSvcParam].AddIpv4HintVoid(void) - Adding $($addr4.IPAddressToString) to IPv4Hints list.")
+          $this.IPv4Hint += $addr4
+        } else {
+          $this.AddLog("[DnsSvcbSvcParam].AddIpv4HintVoid(void) - Failed to convert $addr to an IPv4 address. Skipping this entry.")
+        }
+      }
+    }
+    
+    $this.AddLog("[DnsSvcbSvcParam].AddIpv4HintVoid(void) - End.")
+  }
+
+
+  ## handle IPv6 hints
+  AddIpv6Hint([string]$addr) {
+    $this.AddLog("[DnsSvcbSvcParam].AddIpv6Hint(str) - Begin!")
+    
+    $addr6 = $this.Validate_IPv6Address($addr)
+    $this.AddLog("[DnsSvcbSvcParam].AddIpv6Hint(str) - addr4: $addr6")
+
+    if ( $addr6 -is [ipaddress] ) {
+      $this.AddLog("[DnsSvcbSvcParam].AddIpv6Hint(str) - Adding $($addr6.IPAddressToString) to IPv6Hints list.")
+      $this.IPv4Hint += $addr6
+    } else {
+      $this.AddLog("[DnsSvcbSvcParam].AddIpv6Hint(str) - Failed to convert $addr to an IPv6 address.")
+    }
+
+    $this.AddLog("[DnsSvcbSvcParam].AddIpv6Hint(str) - End.")
+  }
+
+  # create methods to catch various array inputs
+  AddIpv6Hint([array]$addr)           { $this.AddIpv6HintVoid($addr) }
+   
+  AddIpv6Hint([arraylist]$addr)       { $this.AddIpv6HintVoid($addr) }
+   
+  AddIpv6Hint([List[Object]]$addr)    { $this.AddIpv6HintVoid($addr) }
+   
+  AddIpv6Hint([List[string]]$addr)    { $this.AddIpv6HintVoid($addr) }
+
+  AddIpv6Hint([List[ipaddress]]$addr) { $this.AddIpv6HintVoid($addr) }
+
+  # handles adding an array of IPv4 Hints
+  hidden
+  AddIpv6HintVoid($addrArr) {
+    $this.AddLog("[DnsSvcbSvcParam].AddIpv6HintVoid(void) - Begin!")
+
+    if ( $this.IsSupportedArrayType($addrArr) ) {
+      foreach ( $addr in $addrArr ) {
+        $addr4 = $this.Validate_IPv4Address($addr)
+        $this.AddLog("[DnsSvcbSvcParam].AddIpv6HintVoid(void) - addr4: $addr4")
+
+        if ( $addr4 -is [ipaddress] ) {
+          $this.AddLog("[DnsSvcbSvcParam].AddIpv6HintVoid(void) - Adding $($addr4.IPAddressToString) to IPv4Hints list.")
+          $this.IPv4Hint += $addr4
+        } else {
+          $this.AddLog("[DnsSvcbSvcParam].AddIpv6HintVoid(void) - Failed to convert $addr to an IPv4 address. Skipping this entry.")
+        }
+      }
+    }
+    
+    $this.AddLog("[DnsSvcbSvcParam].AddIpv6HintVoid(void) - End.")
+  }
+
 
   #endregion ADDERS
 
@@ -930,65 +1120,111 @@ class DnsSvcbSvcParam {
   # don't use AddLog inside of AddLog
   hidden
   AddLog([string]$txt) {
-      if ( -NOT [string]::IsNullOrEmpty($txt) ) { 
-          Write-Verbose "$txt"
-          $txt = "$($this.Timestamp())`: $txt" 
-          $this.Log += $txt
-      }
+    if ( -NOT [string]::IsNullOrEmpty($txt) ) { 
+      Write-Verbose "$txt"
+      $txt = "$($this.Timestamp())`: $txt" 
+      $this.Log += $txt
+    }
+  }
+
+  [bool]
+  hidden
+  IsSupportedArrayType($test) {
+    $this.AddLog("[DnsSvcbSvcParam].IsSupportedArrayType(1) - Begin")
+    $this.AddLog("[DnsSvcbSvcParam].IsSupportedArrayType(1) - Type:`n$($this.ArgumentList.GetType() | Out-String)")
+    if ( $test -is [array] `
+            -or $test -is [arrayList] `
+            -or $test.GetType().Name -is 'List`1' 
+            #-or $test -is [hashtable]
+        ) {
+        $this.AddLog("[DnsSvcbSvcParam].IsSupportedArrayType(1) - Is supported array.")
+        $this.AddLog("[DnsSvcbSvcParam].IsSupportedArrayType(1) - End")
+        return $true
+    } else {
+        $this.AddLog("[DnsSvcbSvcParam].IsSupportedArrayType(1) - Is not a supported array.")
+        $this.AddLog("[DnsSvcbSvcParam].IsSupportedArrayType(1) - End")
+        return $false
+    }
+    $this.AddLog("[DnsSvcbSvcParam].IsSupportedArrayType(1) - End")
+  }
+
+  [bool]
+  hidden
+  IsSupportedArrayType() {
+    $this.AddLog("[DnsSvcbSvcParam].IsSupportedArrayType() - Begin")
+    if ( $null -eq $this.ArgumentList ) {
+        $this.AddLog("[DnsSvcbSvcParam].IsSupportedArrayType() - Args are NULL. Return false.")
+        return $false
+    }
+
+    $this.AddLog("[DnsSvcbSvcParam].IsSupportedArrayType() - Type:`n$($this.ArgumentList.GetType() | Out-String)")
+    if ( $this.ArgumentList -is [array] `
+            -or $this.ArgumentList -is [arrayList] `
+            -or $this.ArgumentList.GetType().Name -eq 'List`1' 
+            #-or $this.ArgumentList -is [hashtable]
+        ) {
+        $this.AddLog("[DnsSvcbSvcParam].IsSupportedArrayType() - Is supported array.")
+        $this.AddLog("[DnsSvcbSvcParam].IsSupportedArrayType() - End")
+        return $true
+    } else {
+        $this.AddLog("[DnsSvcbSvcParam].IsSupportedArrayType() - Is not a supported array.")
+        $this.AddLog("[DnsSvcbSvcParam].IsSupportedArrayType() - End")
+        return $false
+    }
   }
 
   #endregion UTILITY
 
   ## OUTPUT ##
   #region OUTPUT
-    Write([string]$Filepath, [DnsSvcbWriteType]$Type) {
-      # write results to disk
-      $this.AddLog("[DnsSvcbSvcParam].Write(2) - Begin")
-      
-      if ( $Type -eq "Force" ) {
-          $this.AddLog("[DnsSvcbSvcParam].Write(2) - Write with Force.")
-          $this.Result | Format-Table -AutoSize | Out-String | Out-File "$Filepath" -Force
-      } else {
-          $this.AddLog("[DnsSvcbSvcParam].Write(2) - Write with Append.")
-          $this.Result | Format-Table -AutoSize | Out-String | Out-File "$Filepath" -Append
-      }
-      $this.AddLog("[DnsSvcbSvcParam].Write(2) - End")
+  Write([string]$Filepath, [DnsSvcbWriteType]$Type) {
+    # write results to disk
+    $this.AddLog("[DnsSvcbSvcParam].Write(2) - Begin")
+    
+    if ( $Type -eq "Force" ) {
+        $this.AddLog("[DnsSvcbSvcParam].Write(2) - Write with Force.")
+        $this.Result | Format-Table -AutoSize | Out-String | Out-File "$Filepath" -Force
+    } else {
+        $this.AddLog("[DnsSvcbSvcParam].Write(2) - Write with Append.")
+        $this.Result | Format-Table -AutoSize | Out-String | Out-File "$Filepath" -Append
+    }
+    $this.AddLog("[DnsSvcbSvcParam].Write(2) - End")
   }
 
   Write([string]$Filepath) {
-      # write results to disk - default to append
-      $this.AddLog("[DnsSvcbSvcParam].Write(1) - Begin")
-      $this.AddLog("[DnsSvcbSvcParam].Write(1) - Write with Append.")
-      $this.Result | Format-Table -AutoSize | Out-String | Out-File "$Filepath" -Append
-      $this.AddLog("[DnsSvcbSvcParam].Write(1) - End")
+    # write results to disk - default to append
+    $this.AddLog("[DnsSvcbSvcParam].Write(1) - Begin")
+    $this.AddLog("[DnsSvcbSvcParam].Write(1) - Write with Append.")
+    $this.Result | Format-Table -AutoSize | Out-String | Out-File "$Filepath" -Append
+    $this.AddLog("[DnsSvcbSvcParam].Write(1) - End")
   }
 
   WriteLog([string]$Filepath, [DnsSvcbWriteType]$Type) {
-      # write results to disk
-      $this.AddLog("[DnsSvcbSvcParam].WriteLog(2) - Begin")
-      
-      if ( $Type -eq "Force" ) {
-          $this.AddLog("[DnsSvcbSvcParam].WriteLog(2) - Write with Force.")
-          $this.AddLog("[DnsSvcbSvcParam].WriteLog(2) - End")
-          $this.Log | Format-Table -AutoSize | Out-String | Out-File "$Filepath" -Force
-      } else {
-          $this.AddLog("[DnsSvcbSvcParam].WriteLog(2) - Write with Append.")
-          $this.AddLog("[DnsSvcbSvcParam].WriteLog(2) - End")
-          $this.Log | Format-Table -AutoSize | Out-String | Out-File "$Filepath" -Append
-      }
+    # write results to disk
+    $this.AddLog("[DnsSvcbSvcParam].WriteLog(2) - Begin")
+    
+    if ( $Type -eq "Force" ) {
+      $this.AddLog("[DnsSvcbSvcParam].WriteLog(2) - Write with Force.")
+      $this.AddLog("[DnsSvcbSvcParam].WriteLog(2) - End")
+      $this.Log | Format-Table -AutoSize | Out-String | Out-File "$Filepath" -Force
+    } else {
+      $this.AddLog("[DnsSvcbSvcParam].WriteLog(2) - Write with Append.")
+      $this.AddLog("[DnsSvcbSvcParam].WriteLog(2) - End")
+      $this.Log | Format-Table -AutoSize | Out-String | Out-File "$Filepath" -Append
+    }
   }
 
   WriteLog([string]$Filepath) {
-      # write results to disk - default to append
-      $this.AddLog("[DnsSvcbSvcParam].WriteLog(1) - Begin")
-      $this.AddLog("[DnsSvcbSvcParam].WriteLog(1) - Write with Append.")
-      $this.AddLog("[DnsSvcbSvcParam].WriteLog(1) - End")
-      $this.Log | Format-Table -AutoSize | Out-String | Out-File "$Filepath" -Append
+    # write results to disk - default to append
+    $this.AddLog("[DnsSvcbSvcParam].WriteLog(1) - Begin")
+    $this.AddLog("[DnsSvcbSvcParam].WriteLog(1) - Write with Append.")
+    $this.AddLog("[DnsSvcbSvcParam].WriteLog(1) - End")
+    $this.Log | Format-Table -AutoSize | Out-String | Out-File "$Filepath" -Append
   }
 
   [string]
   ToString() {
-      return ($this | Format-List | Out-String)
+    return ($this | Format-List | Out-String)
   }
 
   #endregion OUTPUT
