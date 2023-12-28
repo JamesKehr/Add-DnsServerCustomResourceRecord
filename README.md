@@ -1,4 +1,4 @@
-# Add-DnsServerCustomResourceRecord
+# DnsServerCustomResourceRecord
 Adds DNS resource records (RR) to Windows DNS Server that are not natively supported by the Windows UI, dnscmd, or the DnsServer PowerShell module.
 
 Windows DNS Server (DNS) has an option to add custom RRs by providing the RR type and a hex stream of the record data. The DnsServerCustomResourceRecord project legerages this capability to make adding custom RR types easier.
