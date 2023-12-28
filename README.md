@@ -58,6 +58,6 @@ The scripts, module, and code come AS-IS with no warranty or guarantees. The scr
 | 6 | :x: |
 | 7.1 | ⚠️ |
 | 7.2 | ⚠️ |
-| 7.3 | :white_check_mark: |
+| 7.3 | ⚠️ |
 | 7.4 | :white_check_mark: |
 | 8 | ⚠️ |
