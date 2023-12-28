@@ -20,13 +20,44 @@ Please include the RFC and a public facing example of a working RR. This helps s
 
 RRs that are currently in draft, such as the ech and ohttp SvcParam keys for the HTTPS RR, will be considered lowest priority.
 
-
-# Legalese
+# Support
 
 |**NOTE**|
 |----------------|
-|**These scripts are not officially Microsoft supported!**|
+|**These scripts are not a Microsoft supported product!**|
 
 All support queries must be submitted as an Issue in this repository. Do not call Microsoft support about these scripts and any associated module.
 
-The scripts, module, and code come AS-IS with no warranty or guarantees. The scripts are well tested and should not cause any issues, but you must use them at your own risk.
+The scripts, module, and code come AS-IS with no warranty or guarantees. The scripts are well tested and should not cause any issues, but you must use them at your own risk. See [LICENSE](../main/LICENSE) for more details.
+
+## Versioning
+
+
+| Label | Definition |
+|-------|------------|
+| :x: | No support. Related issues will be closed as unsupported. |
+| ⚠️  | Limited support and not actively tested. Issues will be addressed at the discretion of the community. |
+| :white_check_mark: | Supported. These issues will take priority. |
+
+|Windows Server| Supported |
+|--------------|-----------|
+| 2008 [R2] | :x: |
+| 2012 [R2] | :x: |
+| 2016      | ⚠️ |
+| 2019      | :white_check_mark: |
+| 2022      | :white_check_mark: |
+
+| PowerShell | Supported |
+|------------|-----------|
+| 1 | :x: |
+| 2 | :x: |
+| 3 | :x: |
+| 4 | :x: |
+| 5 | :x: |
+| 5.1 | :white_check_mark: |
+| 6 | :x: |
+| 7.1 | ⚠️ |
+| 7.2 | ⚠️ |
+| 7.3 | :white_check_mark: |
+| 7.4 | :white_check_mark: |
+| 8 | ⚠️ |
