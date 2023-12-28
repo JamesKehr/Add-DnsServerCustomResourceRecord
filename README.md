@@ -24,9 +24,9 @@ RRs that are currently in draft, such as the ech and ohttp SvcParam keys for the
 
 |**NOTE**|
 |----------------|
-|**These scripts are not a Microsoft supported product!**|
+|**These scripts are not an officially supported Microsoft product!**|
 
-All support queries must be submitted as an Issue in this repository. Do not call Microsoft support about these scripts and any associated module.
+This is currently a community driven OSS project. All support queries must be submitted as an Issue in this repository. Do not call Microsoft support about these scripts and any associated module.
 
 The scripts, module, and code come AS-IS with no warranty or guarantees. The scripts are well tested and should not cause any issues, but you must use them at your own risk. See [LICENSE](../main/LICENSE) for more details.
 
