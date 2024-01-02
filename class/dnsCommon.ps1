@@ -75,6 +75,9 @@
 
 #>
 
+using namespace System.Collections
+using namespace System.Collections.ArrayList
+using namespace System.Collections.Generic
 
 enum DnsStatus {
     Success
@@ -744,6 +747,27 @@ class DnsCommon {
             $script:MainStream.Add($txt)
         }
     }
+
+    [bool]
+  hidden
+  IsSupportedArrayType($test) {
+    $script:Common.AddLog("[DnsCommon].IsSupportedArrayType(1) - Begin")
+    $script:Common.AddLog("[DnsCommon].IsSupportedArrayType(1) - Type:`n$($test | Out-String)")
+    if ( $test -is [array] `
+            -or $test -is [arrayList] `
+            -or $test.GetType().Name -is 'List`1' 
+            #-or $test -is [hashtable]
+        ) {
+        $script:Common.AddLog("[DnsCommon].IsSupportedArrayType(1) - Is supported array.")
+        $script:Common.AddLog("[DnsCommon].IsSupportedArrayType(1) - End")
+        return $true
+    } else {
+        $script:Common.AddLog("[DnsCommon].IsSupportedArrayType(1) - Is not a supported array.")
+        $script:Common.AddLog("[DnsCommon].IsSupportedArrayType(1) - End")
+        return $false
+    }
+    $script:Common.AddLog("[DnsCommon].IsSupportedArrayType(1) - End")
+  }
     #endregion UTILITY
 
     ## OUTPUT ##

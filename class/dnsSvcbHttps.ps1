@@ -761,6 +761,20 @@ enum DnsSvcbHttpsMandatoryKeyName {
   ipv6hint = 6
 }
 
+<#
+# this JSON structure is used to create DnsSvcbHttpsSvcParamKeys
+# the DnsSvcbHttpsSvcParamKeys array contains static details about SvcParamKeys, including:
+#   - Number    - The IANA/RFC SvcParamKey number
+#   - Name      - The official IANA/RFC SvcParamKey name
+#   - enumName  - PowerShell enums cannot use some characters used by IANA/RFC, so they are translated to supported chars
+#   - Meaning   - Official definition of the SvcParamKey
+#   - HexStream - The 2-octet hex stream of the SvcParamKey
+#   - Class     - Name of the class used to manage the SvcParamKey, if implemented/enabled
+#   - Enabled   - Implemented SvcParamKeys are set to true, unimplemented are set to false.
+
+  Unimplemented SvcParamKeys MUST be added to DnsSvcbHttpsSvcParamKeysJSON\DnsSvcbHttpsSvcParamKeys as Enabled = False.
+#>
+
 $DnsSvcbHttpsSvcParamKeysJSON = @'
 [
   {
@@ -768,77 +782,89 @@ $DnsSvcbHttpsSvcParamKeysJSON = @'
     "Name": "mandatory",
     "enumName": "mandatory",
     "Meaning": "Mandatory keys in this RR",
-    "HexStream": "0000"
+    "HexStream": "0000",
+    "Class": "DnsSvcParamKey0_Mandatory",
+    "Enabled": true
   },
   {
     "Number": 1,
     "Name": "alpn",
     "enumName": "alpn",
     "Meaning": "Additional supported protocols",
-    "HexStream": "0001"
+    "HexStream": "0001",
+    "Class": "DnsSvcParamKey1_Alpn",
+    "Enabled": true
   },
   {
     "Number": 2,
     "Name": "no-default-alpn",
     "enumName": "noalpn",
     "Meaning": "No support for default protocol",
-    "HexStream": "0002"
+    "HexStream": "0002",
+    "Class": "DnsSvcParamKey2_NoDefaultAlpn",
+    "Enabled": true
   },
   {
     "Number": 3,
     "Name": "port",
     "enumName": "port",
     "Meaning": "Port for alternative endpoint",
-    "HexStream": "0003"
+    "HexStream": "0003",
+    "Class": "DnsSvcParamKey3_Port",
+    "Enabled": true
   },
   {
     "Number": 4,
     "Name": "ipv4hint",
     "enumName": "ipv4hint",
     "Meaning": "IPv4 address hints",
-    "HexStream": "0004"
+    "HexStream": "0004",
+    "Class": "DnsSvcParamKey4_IPv4Hint",
+    "Enabled": true
+  },
+  {
+    "Number": 5,
+    "Name": "ech",
+    "enumName": "ech",
+    "Meaning": "RESERVED (held for Encrypted ClientHello)",
+    "HexStream": "0005",
+    "Class": "",
+    "Enabled": false
   },
   {
     "Number": 6,
     "Name": "ipv6hint",
     "enumName": "ipv6hint",
     "Meaning": "IPv6 address hints",
-    "HexStream": "0006"
+    "HexStream": "0006",
+    "Class": "DnsSvcParamKey6_IPv6Hint",
+    "Enabled": true
+  },
+  {
+    "Number": 7,
+    "Name": "dohpath",
+    "enumName": "dohpath",
+    "Meaning": "DNS over HTTPS path template",
+    "HexStream": "0007",
+    "Class": "",
+    "Enabled": false
+  },
+  {
+    "Number": 8,
+    "Name": "ohttp",
+    "enumName": "ohttp",
+    "Meaning": "Denotes that a service operates an Oblivious HTTP target",
+    "HexStream": "0008",
+    "Class": "",
+    "Enabled": false
   }
 ]
 '@
 
+
 $script:DnsSvcbHttpsSvcParamKeys = $DnsSvcbHttpsSvcParamKeysJSON | ConvertFrom-Json
 
 #endregion
-
-<#
-
-https://www.rfc-editor.org/rfc/rfc9460#name-initial-contents
-
-The "Service Parameter Keys (SvcParamKeys)" registry has been populated with the following initial registrations:
-
-Table 1
-Number	    Name	            Meaning	                                  Reference	            Change Controller
-0	          mandatory	        Mandatory keys in this RR	                RFC 9460, Section 8	  IETF
-1	          alpn	            Additional supported protocols	          RFC 9460, Section 7.1	IETF
-2	          no-default-alpn	  No support for default protocol	          RFC 9460, Section 7.1	IETF
-3	          port	            Port for alternative endpoint	            RFC 9460, Section 7.2	IETF
-4	          ipv4hint	        IPv4 address hints	                      RFC 9460, Section 7.3	IETF
-5	          ech	              RESERVED (held for Encrypted ClientHello) N/A	                  IETF
-6	          ipv6hint	        IPv6 address hints	                      RFC 9460, Section 7.3	IETF
-65280-65534 N/A	              Reserved for Private Use	                RFC 9460	            IETF
-65535	      N/A	              Reserved ("Invalid key")	                RFC 9460	            IETF
-
-
-Initally supported SvcParams keys are: 0, 1, 2, 4, 6
-
-
-Encrypted Client Hello (ECH) is still in draft. ECH and custom keys for ECH will not be supported until it is approved 
-and a real world example can be analyzed. This will most likely come from CloudFlare or Fastly, based on the RFC.
-
-https://datatracker.ietf.org/doc/html/draft-ietf-tls-esni-17
-#>
 
 <#
 https://www.iana.org/assignments/dns-svcb/dns-svcb.xhtml
@@ -863,13 +889,440 @@ Stretch goal: Add support for key number 7, dohpath.
 #>
 
 
+<#
+
+  SvcParamKey Classes
+
+  Class names must follow the following format:
+    DnsSvcParamKey<number>_<name>
+  
+  The number should not contain extra digits. Use 1 instead of 00001.
+
+  Name should be in upper camel case.
+
+  SvcParamKey classes must contain the following properties:
+
+    static
+    [int]
+    $Number    = <SvcParamKey Number>
+
+    static
+    [string]
+    $HexStream = <SvcParamKey Number in 2-octet numeric wire format>
+
+    static
+    [string]
+    $Name      =  <SvcParamKey Name>
+
+    [List[Object]]
+    $Data
+
+
+  SvcParamKey classes must contain the following constructors:
+
+    - One empty constructor where Data is $null.
+    - One constructor with a single input for data. Data should be validated before adding to the $Data property.
+
+    Example:
+
+    DnsSvcParamKey0_Mandatory() {
+      $this.Data = $null
+    }
+
+    DnsSvcParamKey0_Mandatory($data) {
+      $this.Add($data)
+    }
+
+  SvcParamKey classes must contain the following methods:
+
+    - Validate             - Ensures the SvcParamKey meets RFC specification. 
+                           - The method must throw a terminating error if validation fails
+                           - The method must populate $this.Data if validation is successful.
+                           - SvcParamKeys that support arrays can use multiple Validate methods with varying inputs for single and array-type inputs.
+    - Add                  - Adds an entry to data.
+                           - Must call any validation functions prior to adding data.
+                           - Unless a valid enum is passed.
+    - Remove               - Removes an entry from data.
+    - Clear                - Nulls all dynamic data from the class.
+    - ConvertToHexStream   - Creates and returns a wire format hex stream for the SvcParamKey
+    - ImportFromHexStream  - Uses a wire format hex stream to populate the class data
+    - AddLog               - Adds an entry to the script log. The method must call $script:Common.AddLog.
+    - AddError             - Creates a terminating error. The method must call $script:Common.NewError and then terminate the script.
+    - AddWarning           - Creates a non-terminating error. The method must call $script:Common.NewWarning.
+
+    Additional methods can be created as necessary.
+#>
+#region SvcParamKey
+
+<#
+  Key names contain 1-63 characters from the ranges "a"-"z", "0"-"9", and "-". In ABNF [RFC5234]...
+
+  Arbitrary keys can be represented using the unknown-key presentation format "keyNNNNN" where NNNNN 
+  is the numeric value of the key type without leading zeros. A SvcParam in this form SHALL be parsed 
+  as specified above, and the decoded value SHALL be used as its wire-format encoding.
+
+#>
+
+class DnsSvcParamKey0_Mandatory {
+  ### PROPERTIES ###
+  #region PROPERTIES
+  [List[DnsSvcbHttpsMandatoryKeyName]]
+  $Data
+  #endregion PROPERTIES
+
+  ### CONSTRUCTORS ###
+  #region CONSTRUCTORS
+
+  DnsSvcParamKey0_Mandatory() {
+    # initialize an empty list or ImportFromHexStream will fail
+    $this.Data = [List[DnsSvcbHttpsMandatoryKeyName]]::new()
+  }
+
+  DnsSvcParamKey0_Mandatory($data) {
+    # initialize the list
+    $this.Data = [List[DnsSvcbHttpsMandatoryKeyName]]::new()
+
+    # add data with validation
+    $this.Add($data)
+  }
+
+  DnsSvcParamKey0_Mandatory($data, [bool]$Force) {
+    # initialize the list
+    $this.Data = [List[DnsSvcbHttpsMandatoryKeyName]]::new()
+
+    # add data with validation
+    $this.Add($data, $Force)
+  }
+  #endregion CONSTRUCTORS
+
+  ### METHODS ###
+  #region METHODS
+  
+  #region ADD
+  
+  Add([string]$mand) {
+    $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].Add(str) - Begin!")
+
+    if ( $this.Validate($mand) ) {
+      [DnsSvcbHttpsMandatoryKeyName]$mandStr = $mand
+
+      $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].Add(str) - mandStr: $mandStr")
+
+      if ( $mandStr -is [DnsSvcbHttpsMandatoryKeyName] -and $mandStr -notin $this.Data ) {
+        $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].Add(str) - Adding $mandStr to ALPN list.")
+        $this.Data.Add($mandStr)
+      } elseif ( $mandStr -notin $this.Data ) {
+        $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].Add(str) - The Mandatory ($mandStr) has already been added. Current list: $($this.Data -join ', ')")
+      } else {
+        $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].Add(str) - Failed to convert $mandStr to type DnsSvcbHttpsMandatoryKeyName.")
+      }
+    } else {
+        # failures in validate should terminate execution, but keep this to catch mistakes in validation
+      $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].Add(str) - Validation failed.")
+    }
+  }
+
+  Add($mand, $force) {
+    $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].Add(2) - Begin!")
+
+    # let AddVoid handle any arrays
+    if ( $script:Common.IsSupportedArrayType($mand) ) {
+        $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].Add(2) - Adding array of SvcParamKeys.")
+        $this.AddVoid($mand, $force)
+    # try parsing the data if not a supported array
+    } elseif ( $this.ValidateForced($mand) ) {
+        try {
+            [DnsSvcbHttpsMandatoryKeyName]$mandStr = $mand
+
+            if ( $mandStr -is [DnsSvcbHttpsMandatoryKeyName] -and $mandStr -notin $this.Data ) {
+                $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].Add(2) - Adding $mandStr to ALPN list.")
+                $this.Data.Add($mandStr)
+            } elseif ( $mandStr -notin $this.Data ) {
+                $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].Add(2) - The Mandatory ($mandStr) has already been added. Current list: $($this.Data -join ', ')")
+            } else {
+                $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].Add(2) - Failed to convert $mandStr to type DnsSvcbHttpsMandatoryKeyName.")
+            }
+        } catch {
+            $this.SetError("INVALID_MANDATORY_KEY_NAME2", "Could not add key name ($mand) to Data: $_", "Add(2)")
+        }
+
+        $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].Add(2) - mandStr: $mandStr")
+  
+        
+      } else {
+        $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].Add(2) - Validation failed.")
+      }
+  }
+
+  Add([DnsSvcbHttpsMandatoryKeyName]$mand) {
+    $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].AddMandatory(enum) - Adding $mand to the Mandatory list.")
+    $this.Data.Add($mand)
+  }
+
+  # create methods to catch various array inputs
+  Add([array]$data)             { $this.AddVoid($data, $false) }
+   
+  Add([arraylist]$data)         { $this.AddVoid($data, $false) }
+   
+  Add([List[Object]]$data)      { $this.AddVoid($data, $false) }
+   
+  Add([List[string]]$data)      { $this.AddVoid($data, $false) }
+
+  Add([List[DnsSvcbHttpsAlpn]]$data) { $this.AddVoid($data, $false) }
+
+  # handles adding an array of ALPNs
+  hidden
+  AddVoid($mandArr, $force) {
+    $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].AddVoid - Begin!")
+
+    if ( $script:Common.IsSupportedArrayType($mandArr) ) {
+      foreach ( $mand in $mandArr ) {
+        if ($force) {
+            $valMand = $this.ValidateForced($mand)
+        } else {
+            $valMand = $this.Validate($mand)
+        }
+
+        if ( $valMand ) {
+          [DnsSvcbHttpsMandatoryKeyName]$mandStr = $mand
+
+          $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].AddVoid - mandStr: $mandStr")
+
+          if ( $mandStr -is [DnsSvcbHttpsMandatoryKeyName] -and $mandStr -notin $this.Data ) {
+            $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].AddVoid - Adding $mandStr to Mandatory list.")
+            $this.Data.Add($mandStr)
+          } elseif ( $mandStr -notin $this.Data ) {
+            $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].AddVoid - The Mandatory ($mandStr) has already been added. Current list: $($this.Data -join ', ')")
+          } else {
+            $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].AddVoid - Failed to convert $mandStr to type DnsSvcbHttpsMandatoryKeyName.")
+          }
+        } else {
+          $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].AddVoid - Validation failed.")
+        }
+      }
+    }
+  }
+  #endregion ADD
+
+
+  #region VALIDATE
+  [bool]
+  Validate([string]$key) {
+    $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].Validate - Begin")
+
+    try {
+      $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].Validate - TryParse $key to [DnsSvcbHttpsMandatoryKeyName].")
+      [DnsSvcbHttpsMandatoryKeyName]$keyObj = $key
+      $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].Validate - Success! keyObj: $keyObj")
+
+      return $true
+    } catch {
+      # not a supported mandatory key, or an invalid name
+      $this.SetError("INVALID_MANDATORY_KEY_NAME", "The key name ($key) is not a member of [DnsSvcbHttpsMandatoryKeyName]. Valid key names are: $([DnsSvcbHttpsMandatoryKeyName].GetEnumNames() -join ', ')", "Validate")
+      return $false
+    }
+
+    $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].Validate - End")
+    return $true
+  }
+
+  hidden
+  [bool]
+  ValidateForced([string]$key) {
+    $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].ValidateForced - Begin")
+
+    try {
+      $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].ValidateForced - TryParse $key to [DnsSvcbHttpsMandatoryKeyName].")
+      $keyObj = [DnsSvcbHttpsMandatoryKeyName]$key
+      $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].ValidateForced - Success! Add the key name to mandatory. $keyObj")
+      return $true
+    } catch {
+      # not a supported mandatory key, or an invalid name
+      $this.SetError("INVALID_MANDATORY_KEY_NAME", "The key name ($key) is not a member of [DnsSvcbHttpsMandatoryKeyName]. Valid key names are: $([DnsSvcbHttpsMandatoryKeyName].GetEnumNames() -join ', ')", "ValidateForced")
+      return $false
+    }
+    return $true
+  }
+  #endregion VALIDATE
+
+
+  #region CONVERT/IMPORT
+  [string]
+  ConvertToHexStream() {
+    $hexStr = ""
+
+    # add the key hex stream
+    $hexStr += "$($script:DnsSvcbHttpsSvcParamKeys[0].HexStream)"
+    $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].Convert2HexStream - Key. hexStream: $hexStr")
+
+    # calculate the total length
+    $hexStr += $script:Common.Convert_Int2NetworkNumber( ($this.Data.Count * 2), 2)
+    $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].Convert2HexStream - Mandatory length. hexStream: $hexStr")
+
+    # add the SvcParamKey numbers
+    if ($this.Data.Count -eq 1) {
+        $mand = $this.Data[0]
+        $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].Convert2HexStream - mand: $mand")
+
+        # no value length for mandatory values since all values are 2-octet network numbers.
+        try {
+            #$hexstream += $script:Common.Convert_Int2NetworkNumber( $script:DnsSvcbHttpsMandatoryKeyValue.$mand, 2 )
+            $manKey = $script:DnsSvcbHttpsSvcParamKeys | Where-Object { $_.enumName -eq $mand }
+
+            if ($manKey) {
+                $hexStr += $manKey.HexStream
+                $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].Convert2HexStream - Added mandatory value $($manKey.HexStream). hexStream: $hexStr")
+            } else {
+                $this.SetError("MANDATORY_KEY_VALUE_NOT_FOUND", "The SvcParamKey was not found. Key name: $mand", "Convert2HexStream")
+            }
+        } catch {
+            $this.SetError("UNKNOWN_MANDATORY_KEY_VALUE", "The SvcParam value for key name $mand could not be found.", "Convert2HexStream")
+        }
+    } else {
+        foreach ( $mand in $this.Data ) {
+            $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].Convert2HexStream - mand: $mand")
+            # no value length for mandatory values since all values are 2-octet network numbers.
+            try {
+                #$hexstream += $script:Common.Convert_Int2NetworkNumber( $script:DnsSvcbHttpsMandatoryKeyValue.$mand, 2 )
+                $manKey = $script:DnsSvcbHttpsSvcParamKeys | Where-Object { $_.enumName -eq $mand }
+
+                if ($manKey) {
+                    $hexStr += $manKey.HexStream
+                    $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].Convert2HexStream - Added mandatory value $($manKey.HexStream). hexStream: $hexStr")
+                } else {
+                    $this.SetError("MANDATORY_KEY_VALUE_NOT_FOUND", "The SvcParamKey was not found. Key name: $mand", "Convert2HexStream")
+                }
+            } catch {
+                $this.SetError("UNKNOWN_MANDATORY_KEY_VALUE", "The SvcParam value for key name $mand could not be found.", "Convert2HexStream")
+            }
+        }
+    }
+    
+    $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].Convert2HexStream - Mandatory value. hexStream: $hexStr")
+
+    return $hexStr
+  }
+
+  ImportFromHexStream($RecordData) {
+    $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].ImportFromHexStream - Begin")
+    if ( [string]::IsNullOrEmpty($RecordData) ) {
+      $this.SetError("EMPTY_RECORDDATA", "The RecordData is null or empty.", "ImportFromHexStream")
+    }
+
+    # various static length used to convert number of chars to octects in a hex stream
+    $octetLen = 2
+    $keyLen = 2 * $octetLen
+
+    # tracks the offset pointer
+    # the first two octets (4 chars) are the key, which is well known as 0000
+    $offset = 4
+
+    # get the length
+    $paramLen = [int]"0x$($RecordData.Substring($offset,$keyLen))"
+    $offset += $keyLen
+
+    # find the end of the SvcParam
+    $keyEnds = $offset + ($paramLen * $octetLen)
+
+    do {
+      # get the SvcParam key
+      $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].ImportFromHexStream - raw SvcParamKey: $($RecordData.Substring($offset,$keyLen))")
+      $manKey = $script:DnsSvcbHttpsSvcParamKeys | Where-Object { $_.HexStream -eq "$($RecordData.Substring($offset,$keyLen))" }
+
+      $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].ImportFromHexStream - manKey: $($manKey | Format-List | Out-String)")
+
+      if ($manKey) {
+        # add to Mandatory
+        $this.Add($manKey.enumName, $true)
+      } else {
+        $this.SetError("RECORDDATA_MANDATORY_MISSING", "The SvcParamKey ($($manKey.enumName)) was not found. This may be an unsupported key.", "ImportFromHexStream")
+      }
+
+      # update the offset
+      $offset += $keyLen
+    } until ( $offset -ge $keyEnds)
+
+    if ( $offset -gt $keyEnds ) {
+      $this.SetError("RECORDDATA_MANDATORY_OVERBUFFER", "mandatory over buffer error. Expected offset: $keyEnds, actual offset: $offset", "ImportFromHexStream")
+    }
+
+    if ( $offset -gt $keyEnds ) {
+      $this.SetError("RECORDDATA_MANDATORY_UNDERBUFFER", "mandatory under buffer error. Expected offset: $keyEnds, actual offset: $offset", "ImportFromHexStream")
+    }
+  }
+  #endregion CONVERT/IMPORT
+
+  #region SET
+  hidden
+  [System.Management.Automation.ErrorRecord]
+  SetError ([string]$code, [string]$message, [string]$module) {
+    $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].SetError - Error Code    : $code")
+    $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].SetError - Error Message : $message")
+
+    # record the error in the script wide data stream
+    $txt = "[DnsSvcbHttpsSvcParam].$module - $message"
+    $script:Common.NewError("DnsSvcParamKey0_Mandatory", $module, $code, $message)
+
+    # terminate execution
+    return (Write-Error -Message $txt -EA Stop)
+  }
+
+  hidden 
+  SetWarning ([string]$code, [string]$message, [string]$module) {
+    $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].SetWarning - Warning Code    : $code")
+    $script:Common.AddLog("[DnsSvcParamKey0_Mandatory].SetWarning - Warning Message : $message")
+
+    # record the warning in the script wide data stream
+    $script:Common.NewWarning("DnsSvcParamKey0_Mandatory", $module, $code, $message)
+  }
+  #endregion SET
+
+  #region OUTPUT
+
+  [string]
+  ToString() {
+    return "$($this.Data -Join ',')"
+
+  }
+
+  [string]
+  ToDigString() {
+    return "mandatory=$($($this.Data -Join ','))"
+  }
+
+  #endregion OUTPUT
+
+  #endregion METHODS
+}
+
+class DnsSvcParamKey1_Alpn {
+  
+}
+
+class DnsSvcParamKey2_NoDefaultAlpn {
+  
+}
+
+class DnsSvcParamKey3_Port {
+  
+}
+
+class DnsSvcParamKey4_IPv4Hint {
+  
+}
+
+class DnsSvcParamKey6_IPv6Hint {
+  
+}
+
+#endregion SvcParamKey
 
 
 class DnsSvcbHttpsSvcParam {
   ## PROPERTIES ##
   #region PROPERTIES
 
-  [List[DnsSvcbHttpsMandatoryKeyName]]
+  [DnsSvcParamKey0_Mandatory]
   $Mandatory
 
   [List[DnsSvcbHttpsAlpn]]
@@ -903,7 +1356,7 @@ class DnsSvcbHttpsSvcParam {
 
   DnsSvcbHttpsSvcParam() {
     $script:Common.AddLog("[DnsSvcbHttpsSvcParam] - Empty constructor.")
-    $this.Mandatory = [List[DnsSvcbHttpsMandatoryKeyName]]::new()
+    $this.Mandatory = [DnsSvcParamKey0_Mandatory]::new()
     $this.ALPN      = [List[DnsSvcbHttpsAlpn]]::new()
     $this.NoALPN    = $false
     $this.Port      = -1
@@ -986,165 +1439,25 @@ class DnsSvcbHttpsSvcParam {
     }
   }
 
-  <#
-    Key names contain 1-63 characters from the ranges "a"-"z", "0"-"9", and "-". In ABNF [RFC5234]...
-
-    Arbitrary keys can be represented using the unknown-key presentation format "keyNNNNN" where NNNNN 
-    is the numeric value of the key type without leading zeros. A SvcParam in this form SHALL be parsed 
-    as specified above, and the decoded value SHALL be used as its wire-format encoding.
-
-  hidden
-  [bool]
-  Validate_KeyName([string]$key) {
-
-    return $true
-  }
-
-  hidden
-  [bool]
-  Validate_KeyValue([string]$key) {
-
-    return $true
-  }
-  #>
-
-  # mandatory will only work if the SvcParamKey has already been populated
-  hidden
-  [bool]
-  Validate_Mandatory([string]$key) {
-    $script:Common.AddLog("[DnsSvcbHttps].Validate_Mandatory - Begin")
-
-    try {
-      $script:Common.AddLog("[DnsSvcbHttps].Validate_Mandatory - TryParse $key to [DnsSvcbHttpsMandatoryKeyName].")
-      $keyObj = [DnsSvcbHttpsMandatoryKeyName]$key
-      $script:Common.AddLog("[DnsSvcbHttps].Validate_Mandatory - Success! Does the key have a value?")
-
-      switch ($keyObj) {
-        alpn {
-          if ($this.ALPN.Count -le 0) {
-            $this.SetWarning("MANDATORY_ALPN_EMPTY", "The ALPN list is empty. Please add at least one ALPN before making it mandatory.", "Validate_Mandatory")
-            return $false
-          }
-        }
-
-        port {
-          if ( $this.Port -lt 0 -and $this.Port -gt 65535 ) {
-            $this.SetWarning("MANDATORY_PORT_EMPTY", "The Port is not in in a valid range. Please add a valid Port before making it mandatory.", "Validate_Mandatory")
-            return $false
-          }
-        }
-
-        ipv4hint {
-          if ($this.IPv4Hint.Count -le 0) {
-            $this.SetWarning("MANDATORY_IPV4HINT_EMPTY", "The IPv4Hint list is empty. Please add at least one IPv4Hint before making it mandatory.", "Validate_Mandatory")
-            return $false
-          }
-        }
-
-        ipv6hint {
-          if ($this.IPv6Hint.Count -le 0) {
-            $this.SetWarning("MANDATORY_IPV6HINT_EMPTY", "The IPv6Hint list is empty. Please add at least one IPv6Hint before making it mandatory.", "Validate_Mandatory")
-            return $false
-          }
-        }
-
-        default {
-          $this.SetError("UNKNOWN_MANDATORY_KEY", "The Mandatory key is unknown. The key ($key) was found in the DnsSvcbHttpsMandatoryKeyName but is missing from the validate switch()", "Validate_Mandatory")
-          $this.Result = "The key ($key) was found in the DnsSvcbHttpsMandatoryKeyName but is missing from the validate switch()."
-          return $false
-        }
-      }
-
-      $script:Common.AddLog("[DnsSvcbHttps].Validate_Mandatory - Success! Add the key name to mandatory.")
-      return $true
-    } catch {
-      # not a supported mandatory key, or an invalid name
-      $this.SetWarning("INVALID_MANDATORY_KEY_NAME", "The key name ($key) is not a member of [DnsSvcbHttpsMandatoryKeyName]. Valid key names are: $([DnsSvcbHttpsMandatoryKeyName].GetEnumNames() -join ', ')", "Validate_Mandatory")
-      return $false
-    }
-
-    $script:Common.AddLog("[DnsSvcbHttps].Validate_Mandatory - End")
-    return $true
-  }
-
   #endregion VALIDATORS
 
   ## ADDERS ##
   #region ADDERS
 
-  AddMandatory([string]$mand) {
-    $script:Common.AddLog("[DnsSvcbHttpsSvcParam].AddMandatory(str) - Begin!")
-
-    if ( $this.Validate_Mandatory($mand) ) {
-      [DnsSvcbHttpsMandatoryKeyName]$mandStr = $mand
-
-      $script:Common.AddLog("[DnsSvcbHttpsSvcParam].AddMandatory(str) - mandStr: $mandStr")
-
-      if ( $mandStr -is [DnsSvcbHttpsMandatoryKeyName] -and $mandStr -notin $this.Mandatory ) {
-        $script:Common.AddLog("[DnsSvcbHttpsSvcParam].AddMandatory(str) - Adding $mandStr to ALPN list.")
-        $this.Mandatory.Add($mandStr)
-      } elseif ( $mandStr -notin $this.Mandatory ) {
-        $script:Common.AddLog("[DnsSvcbHttpsSvcParam].AddMandatory(str) - The Mandatory ($mandStr) has already been added. Current list: $($this.Mandatory -join ', ')")
-      } else {
-        $script:Common.AddLog("[DnsSvcbHttpsSvcParam].AddMandatory(str) - Failed to convert $mandStr to type DnsSvcbHttpsMandatoryKeyName.")
-      }
-    } else {
-      $script:Common.AddLog("[DnsSvcbHttpsSvcParam].AddMandatory(str) - Validation failed.")
-    }
-
-    $script:Common.AddLog("[DnsSvcbHttpsSvcParam].AddMandatory(str) - End.")
-
-  }
-
-  AddMandatory([DnsSvcbHttpsMandatoryKeyName]$mand) {
-    $script:Common.AddLog("[DnsSvcbHttpsSvcParam].AddMandatory(enum) - Begin!")
-    $script:Common.AddLog("[DnsSvcbHttpsSvcParam].AddMandatory(enum) - Adding $mand to the Mandatory list.")
-
-    $this.Mandatory.Add($mand)
-
-    $script:Common.AddLog("[DnsSvcbHttpsSvcParam].AddMandatory(enum) - End.")
-  }
-
-  # create methods to catch various array inputs
-  AddMandatory([array]$alpn)             { $this.AddMandatoryVoid($alpn) }
-   
-  AddMandatory([arraylist]$alpn)         { $this.AddMandatoryVoid($alpn) }
-   
-  AddMandatory([List[Object]]$alpn)      { $this.AddMandatoryVoid($alpn) }
-   
-  AddMandatory([List[string]]$alpn)      { $this.AddMandatoryVoid($alpn) }
-
-  AddMandatory([List[DnsSvcbHttpsAlpn]]$alpn) { $this.AddMandatoryVoid($alpn) }
-
-  # handles adding an array of ALPNs
-  hidden
-  AddMandatoryVoid($mandArr) {
-    $script:Common.AddLog("[DnsSvcbHttpsSvcParam].AddMandatoryVoid(void) - Begin!")
-
-    if ( $this.IsSupportedArrayType($mandArr) ) {
-      foreach ( $mand in $mandArr ) {
-        $valMand = $this.Validate_Mandatory($mand)
-        if ( $valMand ) {
-          [DnsSvcbHttpsMandatoryKeyName]$mandStr = $mand
-
-          $script:Common.AddLog("[DnsSvcbHttpsSvcParam].AddMandatory(str) - mandStr: $mandStr")
-
-          if ( $mandStr -is [DnsSvcbHttpsMandatoryKeyName] -and $mandStr -notin $this.Mandatory ) {
-            $script:Common.AddLog("[DnsSvcbHttpsSvcParam].AddMandatory(str) - Adding $mandStr to Mandatory list.")
-            $this.Mandatory.Add($mandStr)
-          } elseif ( $mandStr -notin $this.Mandatory ) {
-            $script:Common.AddLog("[DnsSvcbHttpsSvcParam].AddMandatory(str) - The Mandatory ($mandStr) has already been added. Current list: $($this.Mandatory -join ', ')")
-          } else {
-            $script:Common.AddLog("[DnsSvcbHttpsSvcParam].AddMandatory(str) - Failed to convert $mandStr to type DnsSvcbHttpsMandatoryKeyName.")
-          }
-        } else {
-          $script:Common.AddLog("[DnsSvcbHttpsSvcParam].AddMandatory(str) - Validation failed.")
-        }
-      }
-    }
+  AddMandatory($mand) {
+    $script:Common.AddLog("[DnsSvcbHttpsSvcParam].AddMandatory - Begin!")
     
-    $script:Common.AddLog("[DnsSvcbHttpsSvcParam].AddMandatoryVoid(void) - End.")
+    # the DnsSvcParamKey0_Mandatory class handles all the work
+    $this.Mandatory.Add($mand)
   }
+
+  AddMandatoryForced([string]$mand) {
+    $script:Common.AddLog("[DnsSvcbHttpsSvcParam].AddMandatoryForced(str) - Begin!")
+
+    # the DnsSvcParamKey0_Mandatory class handles all the work
+    $this.Mandatory.Add($mand, $true)
+  }
+
 
   ## handle ALPN
   AddALPN([string]$alpn) {
@@ -1555,26 +1868,10 @@ class DnsSvcbHttpsSvcParam {
       00 01 00 04
     #>
 
-    if ( $this.Mandatory.Count -gt 0 ) {
-      $script:Common.AddLog("[DnsSvcbHttpsSvcParam].Convert2HexStream - Adding Mandatory key.")
-      # add the Mandatory key as a two octet network number.
-      $hexstream += '0000'
-      $script:Common.AddLog("[DnsSvcbHttpsSvcParam].Convert2HexStream - Mandatory key. hexStream: $hexStream")
-
-      # add the SvcParam length as a network number: #items * 2-octects/item as a 2-octet network number
-      # Example: If Mandatory contains alpn and port, then the length is 0004
-      $hexstream += $script:Common.Convert_Int2NetworkNumber( ($this.Mandatory.Count * 2), 2)
-      $script:Common.AddLog("[DnsSvcbHttpsSvcParam].Convert2HexStream - Mandatory length. hexStream: $hexStream")
-
-      foreach ( $mand in $this.Mandatory ) {
-        # no value length for mandatory values since all values are 2-octet network numbers.
-        try {
-          $hexstream += $script:Common.Convert_Int2NetworkNumber( $script:DnsSvcbHttpsMandatoryKeyValue.$mand, 2 )
-        } catch {
-          $this.SetError("UNKNOWN_MANDATORY_KEY_VALUE", "The SvcParam value for key name $mand could not be found.", "Convert2HexStream")
-        }
-      }
-      $script:Common.AddLog("[DnsSvcbHttpsSvcParam].Convert2HexStream - Mandatory value. hexStream: $hexStream")
+    if ( $this.Mandatory.Data.Count -gt 0 ) {
+      $script:Common.AddLog("[DnsSvcbHttpsSvcParam].Convert2HexStream - Adding Mandatory hex stream.")
+      $hexstream += $this.Mandatory.ConvertToHexStream()
+      $script:Common.AddLog("[DnsSvcbHttpsSvcParam].Convert2HexStream - Added mandatory hex stream. hexStream: $hexStream")
     }
 
 
@@ -1830,29 +2127,34 @@ class DnsSvcbHttpsSvcParam {
 
     # find the first SvcParamKey
     $tnOct = [int]"0x$($RecordData.Substring($offset,$octetLen))"
+    $script:Common.AddLog("[DnsSvcbHttpsSvcParam].ImportSvcParamFromRecordData - First TargetName length octet: $tnOct")
 
     if ($tnOct -ne 0) {
+      $script:Common.AddLog("[DnsSvcbHttpsSvcParam].ImportSvcParamFromRecordData - TargetName with an FQDN was detected. Finding the end...")
       # loop until $tnOct == 0
       do {
         # find the next label length
         $offset += $tnOct * $octetLen + 2
-        Write-Host "offset: $offset, data: $($RecordData.Substring($offset,$octetLen))"
+        $script:Common.AddLog("[DnsSvcbHttpsSvcParam].ImportSvcParamFromRecordData - offset: $offset, data: $($RecordData.Substring($offset,$octetLen))")
         
         $tnOct = [int]"0x$($RecordData.Substring($offset,$octetLen))"
-        #Write-Host "tnOct: $tnOct, offset: $offset"
+        $script:Common.AddLog("[DnsSvcbHttpsSvcParam].ImportSvcParamFromRecordData - tnOct: $tnOct, offset: $offset")
       } until ($tnOct -eq 0 -or $offset -gt $rdLen)
 
       if ($offset -gt $rdLen) {
         $this.SetError("RECORDDATA_TARGET_MALFORMED", "The TargetName in the RecordData could not be parsed.", "ImportSvcParamFromRecordData")
       }
     } else {
-      # increment by 1 octet to move past the TargetName of 00
-      $offset += $octetLen
+      $script:Common.AddLog("[DnsSvcbHttpsSvcParam].ImportSvcParamFromRecordData - TargetName = .")
     }
+
+    # increment by 1 octet to move past the TargetName of 00
+    $offset += $octetLen
 
     # tracks key order.
     # throw an error if key are out of order, as that is a protocol violation
     $keyOrder = [List[int]]::new()
+    $script:Common.AddLog("[DnsSvcbHttpsSvcParam].ImportSvcParamFromRecordData - Parsing SvcParamKeys")
 
     do {
       # get the SvcParamKey: 2-octets = 4 chars
@@ -1863,6 +2165,8 @@ class DnsSvcbHttpsSvcParam {
 
       $key = [int]"0x$($RecordData.Substring($offset,$keyLen))"
       $keyOrder.Add($key)
+
+      $script:Common.AddLog("[DnsSvcbHttpsSvcParam].ImportSvcParamFromRecordData - Current key: $key")
 
       # check for key order malformations
       if ( $keyOrder.Count -ge 2 ) {
@@ -1897,27 +2201,14 @@ class DnsSvcbHttpsSvcParam {
           # find the end of the SvcParam
           $keyEnds = $offset + ($paramLen * $octetLen)
 
-          do {
-            # get the SvcParam key
-            $key = $script:DnsSvcbHttpsSvcParamKeys | Where-Object { $_.HexStream -eq "$($RecordData.Substring($offset,$keyLen))" }
+          # get the entire mandatory hex stream
+          $manStream = $RecordData.Substring(($offset - $keyLen * 2),($offset + $keyEnds))
+          $script:Common.AddLog("[DnsSvcbHttpsSvcParam].ImportSvcParamFromRecordData - mandatory hexStream: $manStream")
 
-            if ($key) {
-              # add to Mandatory
-              $this.AddMandatory($key.enumName)
-            } else {
-              $this.SetError("RECORDDATA_MANDATORY_MISSING", "The SvcParamKey (0x$($RecordData.Substring($offset,$keyLen))) was not found. This may be an unsupported key.", "ImportSvcParamFromRecordData")
-            }
-
-            # update the offset
-            $offset += $keyLen
-          } until ( $offset -ge $keyEnds)
-
-          if ( $offset -gt $keyEnds ) {
-            $this.SetError("RECORDDATA_MANDATORY_OVERBUFFER", "mandatory over buffer error. Expected offset: $keyEnds, actual offset: $offset", "ImportSvcParamFromRecordData")
-          }
-
-          if ( $offset -gt $keyEnds ) {
-            $this.SetError("RECORDDATA_MANDATORY_UNDERBUFFER", "mandatory under buffer error. Expected offset: $keyEnds, actual offset: $offset", "ImportSvcParamFromRecordData")
+          try {
+            $this.Mandatory.ImportFromHexStream($manStream)
+          } catch {
+            $this.SetError("RECORDDATA_MANDATORY_IMPORT_FAILURE", "The mandatory SvcParamKey failed to import: $_", "ImportSvcParamFromRecordData")
           }
 
           # put the offset point to the start of the next SvcParam
@@ -2186,6 +2477,10 @@ class DnsSvcbHttpsSvcParam {
     #>
     $str = ""
 
+    if ($this.Mandatory.Count -gt 0) {
+      $str += "$($this.Mandatory.ToDigString()) "
+    }
+
     if ($this.ALPN.Count -gt 0) {
       $str += "alpn=`"$($this.ALPN -join ',')`" "
     }
@@ -2195,11 +2490,11 @@ class DnsSvcbHttpsSvcParam {
     }
 
     if ($this.IPv4Hint.Count -gt 0) {
-      $str += "ipv4hint=`"$($this.IPv4Hint.IPAddressToString -join ',')`" "
+      $str += "ipv4hint=$($this.IPv4Hint.IPAddressToString -join ',') "
     }
 
     if ($this.IPv6Hint.Count -gt 0) {
-      $str += "ipv6hint=`"$($this.IPv6Hint.IPAddressToString -join ',')`" "
+      $str += "ipv6hint=$($this.IPv6Hint.IPAddressToString -join ',') "
     }
     
     return $str.Trim(' ')
@@ -2210,8 +2505,6 @@ class DnsSvcbHttpsSvcParam {
   #endregion METHODS
 
 }
-
-
 
 class DnsSvcbHttps {
   ### PROPERTIES ###
