@@ -43,7 +43,7 @@ function Add-DnsServerCustomResourceRecord {
         ### OPTIONAL for all parameter sets ###
         [Parameter(ParameterSetName='SVCBHTTPS')]
         [int]
-        $TTL,
+        $TimeToLive,
 
         [Parameter(ParameterSetName='SVCBHTTPS')]
         [switch]
@@ -72,7 +72,7 @@ function Add-DnsServerCustomResourceRecord {
         $HttpsTargetName = '.',
 
         [Parameter(ParameterSetName='SVCBHTTPS')]
-        #[List[DnsSvcbHttpsMandatoryKeyName]]
+        [string[]]
         $HttpsMandatory = $null,
 
         [Parameter(ParameterSetName='SVCBHTTPS')]
@@ -111,27 +111,41 @@ function Add-DnsServerCustomResourceRecord {
 }
 
 
+<#
+
+    Service Binding (SVCB) HTTPS RR
+    DNS RR type 65
+
+    RFCs: 9460, 9461, 9462
+
+    https://www.rfc-editor.org/rfc/rfc9460.html
+    https://www.rfc-editor.org/rfc/rfc9461.html
+    https://www.rfc-editor.org/rfc/rfc9462.html
+
+    Drafts: 
+
+#>
 function Add-DnsServerCustomResourceRecordHttps {
     [CmdletBinding()]
     param (
         ### REQUIRED by all parameter sets ###
-        # Resource record name.
-        [Parameter(Mandatory=$true,
-                    ParameterSetName='SVCBHTTPS')]
-        [string]
-        $Name,
-
         # DNS zone name.
         [Parameter(Mandatory=$true,
                     ParameterSetName='SVCBHTTPS')]
         [string]
         $ZoneName,
 
+        # Resource record name.
+        [Parameter(Mandatory=$true,
+                    ParameterSetName='SVCBHTTPS')]
+        [string]
+        $Name,
 
+        
         ### OPTIONAL for all parameter sets ###
         [Parameter(ParameterSetName='SVCBHTTPS')]
         [int]
-        $TTL,
+        $TimeToLive,
 
         [Parameter(ParameterSetName='SVCBHTTPS')]
         [switch]
@@ -153,7 +167,7 @@ function Add-DnsServerCustomResourceRecordHttps {
         [string]
         $HttpsTargetName = '.',
 
-        #[List[DnsSvcbHttpsMandatoryKeyName]]
+        [string[]]
         $HttpsMandatory = $null,
 
         $HttpsALPN = $null,
@@ -187,8 +201,8 @@ function Add-DnsServerCustomResourceRecordHttps {
     $script:Common.AddLog("Add-DnsServerCustomResourceRecord - TargetName validated.")
 
     # RecordName is a valid DNS name
-    if ( -NOT $script:Common.Validate_IsDnsName($Name) ) {
-        return ( Write-Error "Invalid TargetName. The TargetName is not a valid DNS name." -EA Stop )
+    if ( -NOT $script:Common.Validate_IsDnsName($Name) -and $Name -ne '@' ) {
+        return ( Write-Error "Invalid record Name. The record Name is not a valid DNS name." -EA Stop )
     }
     $script:Common.AddLog("Add-DnsServerCustomResourceRecord - RecordName validated.")
 
@@ -246,6 +260,8 @@ function Add-DnsServerCustomResourceRecordHttps {
                     $script:Common.AddLog("Add-DnsServerCustomResourceRecord - Failed to add ALPN: $_")
                     return ( Write-Error "Failed to add ALPN: $_" -EA Stop )
                 }
+            } elseif ($HttpsMandatory -contains "alpn") {
+                return ( Write-Error "Mandatory contains alpn but HttpsALPN was not passed." -EA Stop )
             }
 
             # add no-default-alpn
@@ -263,6 +279,8 @@ function Add-DnsServerCustomResourceRecordHttps {
                     $script:Common.AddLog("Add-DnsServerCustomResourceRecord - Failed to add Port: $_")
                     return ( Write-Error "Failed to add Port: $_" -EA Stop )
                 }
+            } elseif ($HttpsMandatory -contains "port") {
+                return ( Write-Error "Mandatory contains port but no HttpsPort was passed." -EA Stop )
             }
 
             # add IPv4 hints
@@ -274,6 +292,8 @@ function Add-DnsServerCustomResourceRecordHttps {
                     $script:Common.AddLog("Add-DnsServerCustomResourceRecord - Failed to add Port: $_")
                     return ( Write-Error "Failed to add IPv4Hint: $_" -EA Stop )
                 }
+            } elseif ($HttpsMandatory -contains "ipv4hint") {
+                return ( Write-Error "Mandatory contains ipv4hint but no HttpsIPv4Hint was passed." -EA Stop )
             }
 
             # add IPv6 hints
@@ -285,12 +305,15 @@ function Add-DnsServerCustomResourceRecordHttps {
                     $script:Common.AddLog("Add-DnsServerCustomResourceRecord - Failed to add Port: $_")
                     return ( Write-Error "Failed to add IPv6Hint: $_" -EA Stop )
                 }
+            } elseif ($HttpsMandatory -contains "ipv6hint") {
+                return ( Write-Error "Mandatory contains ipv4hint but no HttpsIPv6Hint was passed." -EA Stop )
             }
 
 
-            # do Mandatory here at the end.
+            # do Mandatory here at the end or validation might fail
             if ( $HttpsMandatory ) {
                 $script:Common.AddLog("Add-DnsServerCustomResourceRecord - Adding Mandatory.")
+
                 try {
                     $svcbHttps.AddMandatory($HttpsMandatory)
                 } catch {
@@ -432,8 +455,12 @@ function Get-DnsServerCustomResourceRecordHttps {
         $Name = $null
     )
 
+    # $script:Common.AddLog("Get-DnsServerCustomResourceRecord - ")
+    $script:Common.AddLog("Get-DnsServerCustomResourceRecord - Begin!")
+
     # get the SVCB records from DNS
     try {
+        $script:Common.AddLog("Get-DnsServerCustomResourceRecord - Getting records and record data.")
        if ( [string]::IsNullOrEmpty( $Name ) ) {
             # get all the SVCB HTTPS (type 65) records
             [array]$RRs = Get-DnsServerResourceRecord -ZoneName $ZoneName -Type 65 -EA Stop
@@ -445,9 +472,13 @@ function Get-DnsServerCustomResourceRecordHttps {
         return ( Write-Error "$_" -EA Stop )
     }
 
+    $script:Common.AddLog("Get-DnsServerCustomResourceRecord - Found $($RRs.Count) matching records.")
+
     # populate httpsStruc with the record details
     $list = [List[Object]]::new()
     foreach ($rr in $RRs) {
+        $script:Common.AddLog("Get-DnsServerCustomResourceRecord - RecordData: $($rr.RecordData.Data)")
+
         <#
             SvcPriority ($sp)
 
@@ -456,10 +487,15 @@ function Get-DnsServerCustomResourceRecordHttps {
         #>
         $sp = [int]"0x$($rr.RecordData.Data.SubString(0,4))"
 
+        $script:Common.AddLog("Get-DnsServerCustomResourceRecord - SvcPriority: $sp")
+
         if ($sp -eq 0) {
+            $script:Common.AddLog("Get-DnsServerCustomResourceRecord - Processing AliasMode record.")
+            $script:Common.AddLog("Get-DnsServerCustomResourceRecord - Creating an AliasMode struct.")
             $tmpObj = New-DnsServerCustomSvcbHttpsAliasStruct
 
             #  copy values from rr to tmpObj
+            $script:Common.AddLog("Get-DnsServerCustomResourceRecord - Copying RR data to struct.")
             $tmpObj.DistinguishedName = $rr.DistinguishedName
             $tmpObj.HostName          = $rr.HostName
             $tmpObj.TimeToLive        = $rr.TimeToLive
@@ -471,23 +507,32 @@ function Get-DnsServerCustomResourceRecordHttps {
              $tn = $script:Common.Convert_DnsHexStrem2DnsName($rr.RecordData.Data.SubString(4))
  
              if ( [string]::IsNullOrEmpty($tn) ) {
-                 $tmpObj.TargetName = '.'
+                $script:Common.AddLog("Get-DnsServerCustomResourceRecord - TargetName is NULL, translating to '.' (dot).")
+                $tmpObj.TargetName = '.'
              } else {
+                $script:Common.AddLog("Get-DnsServerCustomResourceRecord - TargetName: $tn")
                  $tmpObj.TargetName = $tn
              }
 
+             $script:Common.AddLog("Get-DnsServerCustomResourceRecord - Completed AliasMode struct:$($tmpObj | Format-List | Out-String)")
+
         } elseif ($sp -eq 1) {
+            $script:Common.AddLog("Get-DnsServerCustomResourceRecord - Processing ServiceMode record.")
             # get a RR struct
+            $script:Common.AddLog("Get-DnsServerCustomResourceRecord - Creating a ServiceMode struct.")
             $tmpObj = New-DnsServerCustomSvcbHttpsServiceStruct
 
             #  copy values from rr to tmpObj
+            $script:Common.AddLog("Get-DnsServerCustomResourceRecord - Copying data to struct.")
             $tmpObj.DistinguishedName = $rr.DistinguishedName
             $tmpObj.HostName          = $rr.HostName
             $tmpObj.TimeToLive        = $rr.TimeToLive
             $tmpObj.RecordData        = $rr.RecordData.Data
 
             # fill in the struct
+            $script:Common.AddLog("Get-DnsServerCustomResourceRecord - Processing the SvcParam data.")
             $tmpObj.SvcParamObj.ImportSvcParamFromRecordData($rr.RecordData.Data)
+            $script:Common.AddLog("Get-DnsServerCustomResourceRecord - SvcParam data processed.")
 
             # add the dig string to SvcParam
             $tmpObj.SvcParam = $tmpObj.SvcParamObj.ToDigString()
@@ -498,10 +543,14 @@ function Get-DnsServerCustomResourceRecordHttps {
             $tn = $script:Common.Convert_DnsHexStrem2DnsName($rr.RecordData.Data.SubString(4))
 
             if ( [string]::IsNullOrEmpty($tn) ) {
+                $script:Common.AddLog("Get-DnsServerCustomResourceRecord - TargetName is NULL, translating to '.' (dot).")
                 $tmpObj.TargetName = '.'
             } else {
+                $script:Common.AddLog("Get-DnsServerCustomResourceRecord - TargetName: $tn")
                 $tmpObj.TargetName = $tn
             }
+
+            $script:Common.AddLog("Get-DnsServerCustomResourceRecord - Completed ServiceMode struct:$($tmpObj | Format-List | Out-String)")
         } else {
             $script:Common.NewWarning("DnsServerCustomResourceRecord", "Get-DnsServerCustomResourceRecordHttps", "UNKNOWN_SVCPRIORITY", "Unknown SvcPriority: $sp")
         }
@@ -513,5 +562,6 @@ function Get-DnsServerCustomResourceRecordHttps {
         Remove-Variable tmpObj -EA SilentlyContinue
     }
 
+    $script:Common.AddLog("Get-DnsServerCustomResourceRecord - End")
     return $list
 }
