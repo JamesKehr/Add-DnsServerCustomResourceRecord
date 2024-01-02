@@ -6,6 +6,7 @@ Windows DNS Server (DNS) has an option to add custom RRs by providing the RR typ
 Some custom RRs created by this project may appear as type UNKNOWN without parsed record data in Windows DNS Server manager, dnscmd, and native PowerShell. The DnsServerCustomResourceRecord cmdlets should be used to add, view, and change these custom RRs until native support is added to Windows DNS Server.
 
 Wiki: https://github.com/JamesKehr/DnsServerCustomResourceRecord/wiki
+
 Known Issues: https://github.com/JamesKehr/DnsServerCustomResourceRecord/issues
 
 ## Supported RR Types
@@ -47,7 +48,7 @@ The scripts, module, and code come AS-IS with no warranty or guarantees. The scr
 | 2008 [R2] | :x: |
 | 2012 [R2] | :x: |
 | 2016      | ⚠️ |
-| 2019      | :white_check_mark: |
+| 2019      | ⚠️ |
 | 2022      | :white_check_mark: |
 
 | PowerShell | Supported |
