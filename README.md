@@ -1,5 +1,6 @@
 # DnsServerCustomResourceRecord
-Adds DNS resource records (RR) to Windows DNS Server that are not natively supported by the Windows UI, dnscmd, or the DnsServer PowerShell module.
+
+This project eases the process of generating and parsing record data for a resource record (RR) types that Windows DNS client/server does not natively support. Where no native support is defined as no in-box method, via the Windows UI, dnscmd, or the DnsServer PowerShell module, to add a record type other than generating the record data's hex stream manually.
 
 Windows DNS Server (DNS) has an option to add custom RRs by providing the RR type and a hex stream of the record data. The DnsServerCustomResourceRecord project legerages this capability to make adding custom RR types easier.
 
@@ -24,13 +25,32 @@ Please include the RFC and a public facing example of a working RR. This helps s
 
 RRs that are currently in draft, such as the ech and ohttp SvcParam keys for the HTTPS RR, will be considered lowest priority.
 
+# FAQ
+
+## How does it work?
+
+Windows DNS Server (Win DNS) has a set of common records that it can parse in real time, like: A, AAAA, CNAME, PTR, SRV, and so on. Win DNS can also serve custom DNS resource records (RR), i.e. ones that are not built-in to Windows. This project uses the latter option, custom DNS RRs, to implement DNS record types that are not built-in to Windows.
+
+## How do custom DNS Resource Records work?
+
+Creating a custom DNS RR requires knowledge of the DNS records RFC(s) and how DNS answer records work. The parameters passed to the project cmdlet (e.g. [Add‐DnsServerCustomResourceRecordHttps](https://github.com/JamesKehr/DnsServerCustomResourceRecord/wiki/Add%E2%80%90DnsServerCustomResourceRecordHttps)) are used to create the record data. Where the record data is a stream of hex characters that represent the binary bits in the DNS query answer.
+
+The record data must be built based on the RRs RFC definition(s). This generally includes things like codes, lengths, strings, priorities, and so on.
+
+The Windows DNS Server in-box cmdlet, [Add-DnsServerResourceRecord](https://learn.microsoft.com/powershell/module/dnsserver/add-dnsserverresourcerecord), is then used to add the RR to Win DNS using the -RecordData parameter. This provides an administratively simplified method of adding custom RR record data for supported record types.
+
+## Will this script modify or make changes to DNS server settings?
+
+No. All the script does is generate record data and add the RR to DNS using the in-box [Add-DnsServerResourceRecord](https://learn.microsoft.com/powershell/module/dnsserver/add-dnsserverresourcerecord) cmdlet. No server settings in DNS Server or Windows are changed. It's no different than adding any other resource record to DNS.
+
+
 # Support
 
 |**NOTE**|
 |----------------|
 |**These scripts are not an officially supported Microsoft product!**|
 
-This is currently a community driven OSS project. All support queries must be submitted as an Issue in this repository. Do not call Microsoft support about these scripts and any associated module.
+This is a community driven OSS project. All support queries must be submitted as an Issue in this repository. Do not call Microsoft support about these scripts and any associated module.
 
 The scripts, module, and code come AS-IS with no warranty or guarantees. The scripts are well tested and should not cause any issues, but you must use them at your own risk. See [LICENSE](../main/LICENSE) for more details.
 
